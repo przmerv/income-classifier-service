@@ -7,7 +7,12 @@ authors = [
     { name = "Mervin Perez", email = "perezmervin25@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "joblib>=1.6.0",
+    "pandas>=3.0.6",
+    "pydantic-settings>=2.15.0",
+    "scikit-learn>=1.9.1",
+]
 
 [project.scripts]
 income-classifier = "income_classifier:main"
@@ -19,6 +24,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "mypy>=2.3.1",
+    "pandas-stubs>=3.0.5.260914",
     "pre-commit>=4.6.2",
     "pytest>=9.1.1",
     "ruff>=0.16.8",
@@ -32,6 +38,8 @@ select = ["E", "F", "I", "B", "UP"]   # errors, pyflakes, imports, bugbear, pyup
 
 [tool.mypy]
 strict = true
+module = ["sklearn.*", "joblib"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
