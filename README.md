@@ -1,4 +1,4 @@
-# project-template
+# income-classifier
 
 Python project template: uv, ruff, mypy, pytest, pre-commit, and CI preconfigured.
 
@@ -15,7 +15,7 @@ Python project template: uv, ruff, mypy, pytest, pre-commit, and CI preconfigure
 
 ## After creating a new project
 
-- [ ] Rename `src/app/` to your package name
+- [ ] Rename `src/income_classifier/` to your package name
 - [ ] Update `name` in `pyproject.toml`
 - [ ] Replace this README
 

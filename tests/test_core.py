@@ -1,6 +1,6 @@
 import pytest
 
-from app.core import normalize
+from income_classifier.core import normalize
 
 
 def test_range() -> None:
