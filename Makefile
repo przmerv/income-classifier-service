@@ -1,4 +1,4 @@
-.PHONY: setup test lint format
+.PHONY: setup test lint format train
 
 setup:
 	uv sync --frozen
@@ -13,5 +13,8 @@ lint:
 	uv run mypy src tests
 
 format:
-	uv run ruff format .
 	uv run ruff check --fix .
+	uv run ruff format .
+
+train:
+	uv run python -m income_classifier.train
