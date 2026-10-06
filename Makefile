@@ -1,4 +1,4 @@
-.PHONY: setup test lint format train
+.PHONY: setup test lint format train serve
 
 setup:
 	uv sync --frozen
@@ -18,3 +18,6 @@ format:
 
 train:
 	uv run python -m income_classifier.train
+
+serve:
+	uv run uvicorn income_classifier.api:app --reload
