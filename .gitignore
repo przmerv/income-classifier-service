@@ -19,3 +19,4 @@ htmlcov/
 # Project
 artifacts/
 .env
+notebooks/
