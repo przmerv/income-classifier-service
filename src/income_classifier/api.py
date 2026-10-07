@@ -1,10 +1,11 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from income_classifier.config import Settings
 from income_classifier.predictor import Predictor
+from income_classifier.schemas import Person, PredictResponse
 
 
 @asynccontextmanager
@@ -36,3 +37,20 @@ def health_check() -> dict[str, str]:
     restarts it if this stops responding.
     """
     return {"status": "ok"}
+
+
+@app.post("/predict")
+def predict(person: Person, request: Request) -> PredictResponse:
+    """Return the probability that one person earns more than $50K a year.
+
+    FastAPI checks the JSON body against Person before this runs, so bad
+    or missing fields get a 422 error automatically. Uses the model that
+    was loaded once at startup.
+    """
+    predictor: Predictor = request.app.state.predictor
+    settings: Settings = request.app.state.settings
+
+    row = person.model_dump(by_alias=True)
+    probability = predictor.predict([row])[0]
+
+    return PredictResponse(probability=probability, model_version=settings.model_version)
