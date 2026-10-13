@@ -26,7 +26,9 @@ class Predictor:
         if not model_path.exists():
             raise FileNotFoundError(f"Model artifact not found: {model_path}")
         self.model_path = model_path
-        self._pipeline: Any = joblib.load(model_path)
+        artifact: dict[str, Any] = joblib.load(model_path)
+        self._pipeline: Any = artifact["pipeline"]
+        self.model_version: str = artifact["model_version"]
         self.known_categories: dict[str, set[str]] = self._load_known_categories()
 
     def predict(self, rows: list[dict[str, Any]]) -> list[float]:

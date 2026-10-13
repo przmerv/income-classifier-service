@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 
 import joblib
 import pandas as pd
@@ -50,8 +51,15 @@ def train(settings: Settings) -> float:
     probabilities = pipeline.predict_proba(x_test)[:, 1]
     auc = float(roc_auc_score(y_test, probabilities))
 
+    model_version = datetime.now(tz=UTC).strftime("%Y%m%d-%H%M%S")
+    artifact = {
+        "pipeline": pipeline,
+        "model_version": model_version,
+        "roc_auc": auc,
+    }
+
     settings.model_path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipeline, settings.model_path)
+    joblib.dump(artifact, settings.model_path)
     return auc
 
 

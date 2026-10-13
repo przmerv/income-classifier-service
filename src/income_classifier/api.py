@@ -72,7 +72,6 @@ def predict(person: Person, request: Request) -> PredictResponse:
     was loaded once at startup.
     """
     predictor: Predictor = request.app.state.predictor
-    settings: Settings = request.app.state.settings
 
     row = person.model_dump(by_alias=True)
     unknown = predictor.find_unknown_categories(row)
@@ -84,15 +83,17 @@ def predict(person: Person, request: Request) -> PredictResponse:
     unknown = predictor.find_unknown_categories(row)
     probability = predictor.predict([row])[0]
 
-    return PredictResponse(probability=probability, model_version=settings.model_version)
+    return PredictResponse(probability=probability, model_version=predictor.model_version)
 
 
 @app.get("/version")
 def version(request: Request) -> VersionResponse:
-    """Print which model version and code commit this API is running,
+    """Report which model version and code commit this API is running.
 
-    The commit comes from the APP_GIT_SHA setting, which CI fills in at build time;
-    on a local build it defaults to "local".
+    The model version is read from the loaded model file, set at training
+    time. The commit comes from APP_GIT_SHA, which CI fills in at build
+    time; on a laptop it defaults to "local".
     """
+    predictor: Predictor = request.app.state.predictor
     settings: Settings = request.app.state.settings
-    return VersionResponse(model_version=settings.model_version, git_sha=settings.git_sha)
+    return VersionResponse(model_version=predictor.model_version, git_sha=settings.git_sha)
