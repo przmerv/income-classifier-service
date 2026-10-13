@@ -26,9 +26,11 @@ CATEGORICAL_COLUMNS: list[str] = [
     "native-country",
 ]
 FEATURE_COLUMNS: list[str] = NUMERIC_COLUMNS + CATEGORICAL_COLUMNS
+MISSING_VALUE = "missing"  # used to fill in missing values in categorical columns
 
 
 def build_pipeline() -> Pipeline:
+
     numeric = Pipeline(
         steps=[
             ("impute", SimpleImputer(strategy="median")),
@@ -37,7 +39,7 @@ def build_pipeline() -> Pipeline:
     )
     categorical = Pipeline(
         steps=[
-            ("impute", SimpleImputer(strategy="constant", fill_value="missing")),
+            ("impute", SimpleImputer(strategy="constant", fill_value=MISSING_VALUE)),
             ("encode", OneHotEncoder(handle_unknown="ignore")),
         ]
     )
