@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -45,3 +47,14 @@ class VersionResponse(BaseModel):
 
     model_version: str
     git_sha: str
+
+
+class BatchRequest(BaseModel):
+    """A list of people to score in one request, for /predict/stream.
+
+    Holds between 1 and 100 people as raw JSON objects. Each person is
+    checked individually while streaming, so one bad entry only fails
+    that person instead of rejecting the whole batch.
+    """
+
+    people: list[dict[str, Any]] = Field(min_length=1, max_length=100)

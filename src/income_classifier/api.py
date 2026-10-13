@@ -1,18 +1,80 @@
+import json
 import logging
 import time
 import uuid
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable, Iterator
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
+from pydantic import ValidationError
 
 from income_classifier.config import Settings
 from income_classifier.logging_config import request_id_var, setup_logging
 from income_classifier.predictor import Predictor
-from income_classifier.schemas import Person, PredictResponse, VersionResponse
+from income_classifier.schemas import BatchRequest, Person, PredictResponse, VersionResponse
 
 logger = logging.getLogger(__name__)
+
+
+def generate_prediction_events(
+    raw_people: list[dict[str, Any]], predictor: Predictor, request_id: str
+) -> Iterator[str]:
+    """Check and score each person, streaming one message per person.
+
+    Valid people get a prediction message; invalid ones get a rejected
+    message with the reason, and the rest carry on. Ends with a done
+    message counting successes and failures.
+    """
+    succeeded = 0
+    failed = 0
+
+    for index, raw_person in enumerate(raw_people):
+        try:
+            person = Person.model_validate(raw_person)
+        except ValidationError as error:
+            failed += 1
+            payload: dict[str, Any] = {
+                "index": index,
+                "reason": "invalid_input",
+                "fields": describe_validation_error(error),
+            }
+            yield f"event: rejected\ndata: {json.dumps(payload)}\n\n"
+            continue
+
+        row = person.model_dump(by_alias=True)
+        unknown = predictor.find_unknown_categories(row)
+        if unknown:
+            failed += 1
+            logger.warning(
+                "values not in training data",
+                extra={"fields": {"index": index, "unknown": unknown, "request_id": request_id}},
+            )
+            detail = build_unknown_category_detail(unknown, predictor)
+            payload = {
+                "index": index,
+                "reason": "value_not_in_training_data",
+                "fields": detail["fields"],
+            }
+            yield f"event: rejected\ndata: {json.dumps(payload)}\n\n"
+            continue
+
+        probability = predictor.predict([row])[0]
+        succeeded += 1
+        payload = {
+            "index": index,
+            "probability": probability,
+            "model_version": predictor.model_version,
+        }
+        yield f"event: prediction\ndata: {json.dumps(payload)}\n\n"
+
+    logger.info(
+        "stream completed",
+        extra={"fields": {"succeeded": succeeded, "failed": failed, "request_id": request_id}},
+    )
+    summary = {"count": len(raw_people), "succeeded": succeeded, "failed": failed}
+    yield f"event: done\ndata: {json.dumps(summary)}\n\n"
 
 
 @asynccontextmanager
@@ -152,3 +214,34 @@ def version(request: Request) -> VersionResponse:
     predictor: Predictor = request.app.state.predictor
     settings: Settings = request.app.state.settings
     return VersionResponse(model_version=predictor.model_version, git_sha=settings.git_sha)
+
+
+@app.post("/predict/stream")
+def predict_stream(batch: BatchRequest, request: Request) -> StreamingResponse:
+    """Score a batch of people and stream each result as it is ready.
+
+    Each person is checked on their own: valid people get a prediction,
+    invalid ones get a rejected message with the reason, and one bad entry
+    never blocks the others. Ends with a summary of successes and failures.
+    """
+    predictor: Predictor = request.app.state.predictor
+    return StreamingResponse(
+        generate_prediction_events(batch.people, predictor, request_id_var.get()),
+        media_type="text/event-stream",
+    )
+
+
+def describe_validation_error(error: ValidationError) -> list[dict[str, str]]:
+    """Turn a pydantic validation error into a short list of problems.
+
+    Each problem names the field and what was wrong with it, e.g. age
+    being above the allowed maximum, so callers get a readable reason
+    instead of pydantic's full technical output.
+    """
+    problems: list[dict[str, str]] = []
+    for item in error.errors(include_url=False):
+        parts: list[str] = []
+        for part in item["loc"]:
+            parts.append(str(part))
+        problems.append({"field": ".".join(parts), "problem": item["msg"]})
+    return problems

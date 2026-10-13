@@ -1,0 +1,16 @@
+{
+  "people": [
+    {"age": 45, "education_num": 14, "capital_gain": 0, "capital_loss": 0, "hours_per_week": 50,
+     "workclass": "Private", "education": "Masters", "marital_status": "Married-civ-spouse",
+     "occupation": "Exec-managerial", "relationship": "Husband", "race": "White",
+     "sex": "Male", "native_country": "United-States"},
+    {"age": 22, "education_num": 9, "capital_gain": 0, "capital_loss": 0, "hours_per_week": 25,
+     "workclass": "Private", "education": "HS-grad", "marital_status": "Never-married",
+     "occupation": "Handlers-cleaners", "relationship": "Own-child", "race": "White",
+     "sex": "Female", "native_country": "United-States"},
+    {"age": 38, "education_num": 13, "capital_gain": 5000, "capital_loss": 0, "hours_per_week": 40,
+     "workclass": "Self-emp-not-inc", "education": "Bachelors", "marital_status": "Divorced",
+     "occupation": "Pro-Esports-Player", "relationship": "Unmarried", "race": "Black",
+     "sex": "Female", "native_country": "United-States"}
+  ]
+}
