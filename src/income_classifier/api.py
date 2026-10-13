@@ -1,12 +1,18 @@
-from collections.abc import AsyncGenerator
+import logging
+import time
+import uuid
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 
 from income_classifier.config import Settings
+from income_classifier.logging_config import request_id_var, setup_logging
 from income_classifier.predictor import Predictor
 from income_classifier.schemas import Person, PredictResponse, VersionResponse
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -18,6 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     fails at startup rather than on the first request.
     """
     settings = Settings()
+    setup_logging(settings.log_level)
     app.state.settings = settings
     app.state.predictor = Predictor(settings.model_path)
     yield
@@ -28,6 +35,46 @@ app = FastAPI(
     description="Predicts the probability that a person earns more than $50K a year.",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def add_request_id_and_log(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Tag each request with an ID and log one summary line when it ends.
+
+    Reuses the caller's X-Request-ID header if sent, otherwise makes a new
+    ID. The ID is attached to every log line during the request and sent
+    back in the response header, so one request can be traced end to end.
+    """
+    request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+    token = request_id_var.set(request_id)
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "request failed",
+            extra={"fields": {"method": request.method, "path": request.url.path}},
+        )
+        raise
+    else:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        logger.info(
+            "request completed",
+            extra={
+                "fields": {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": response.status_code,
+                    "duration_ms": duration_ms,
+                }
+            },
+        )
+        return response
+    finally:
+        request_id_var.reset(token)
 
 
 @app.get("/health")
@@ -76,12 +123,20 @@ def predict(person: Person, request: Request) -> PredictResponse:
     row = person.model_dump(by_alias=True)
     unknown = predictor.find_unknown_categories(row)
     if unknown:
+        logger.warning(
+            "values not in training data",
+            extra={"fields": {"unknown": unknown, "row": row}},
+        )
         raise HTTPException(
             status_code=422,
             detail=build_unknown_category_detail(unknown, predictor),
         )
     unknown = predictor.find_unknown_categories(row)
     probability = predictor.predict([row])[0]
+    logger.info(
+        "prediction made",
+        extra={"fields": {"probability": probability, "model_version": predictor.model_version}},
+    )
 
     return PredictResponse(probability=probability, model_version=predictor.model_version)
 

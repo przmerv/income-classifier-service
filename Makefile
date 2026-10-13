@@ -20,4 +20,4 @@ train:
 	uv run python -m income_classifier.train
 
 serve:
-	uv run uvicorn income_classifier.api:app --reload
+	uv run uvicorn income_classifier.api:app --reload --no-access-log
