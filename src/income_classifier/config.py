@@ -11,3 +11,4 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     random_seed: int = 42
     test_size: float = 0.2
+    git_sha: str = "local"

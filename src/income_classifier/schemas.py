@@ -2,6 +2,13 @@ from pydantic import BaseModel, Field
 
 
 class Person(BaseModel):
+    """One person's details, as sent to the /predict endpoint.
+
+    Every field is required. Numbers are checked against realistic ranges,
+    so a bad value is rejected with a 422 error before it reaches the model.
+    Aliases map the friendly names back to the dataset's column names.
+    """
+
     age: int = Field(ge=17, le=100)
     education_num: int = Field(ge=1, le=16, serialization_alias="education-num")
     capital_gain: int = Field(ge=0, serialization_alias="capital-gain")
@@ -18,5 +25,23 @@ class Person(BaseModel):
 
 
 class PredictResponse(BaseModel):
+    """What the /predict endpoint sends back.
+
+    The probability (between 0 and 1) that the person earns more than $50K
+    a year, plus the model version that produced it, so every answer can be
+    traced back to the exact model used.
+    """
+
     probability: float = Field(ge=0.0, le=1.0)
     model_version: str
+
+
+class VersionResponse(BaseModel):
+    """What the /version endpoint returns.
+
+    Tells a caller which model is loaded and which commit of the code is
+    running, so problems in production can be traced to an exact build.
+    """
+
+    model_version: str
+    git_sha: str

@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 
 from income_classifier.config import Settings
 from income_classifier.predictor import Predictor
-from income_classifier.schemas import Person, PredictResponse
+from income_classifier.schemas import Person, PredictResponse, VersionResponse
 
 
 @asynccontextmanager
@@ -54,3 +54,14 @@ def predict(person: Person, request: Request) -> PredictResponse:
     probability = predictor.predict([row])[0]
 
     return PredictResponse(probability=probability, model_version=settings.model_version)
+
+
+@app.get("/version")
+def version(request: Request) -> VersionResponse:
+    """Print which model version and code commit this API is running,
+
+    The commit comes from the APP_GIT_SHA setting, which CI fills in at build time;
+    on a local build it defaults to "local".
+    """
+    settings: Settings = request.app.state.settings
+    return VersionResponse(model_version=settings.model_version, git_sha=settings.git_sha)
