@@ -1,3 +1,9 @@
+"""Train the income model and save it, with its version, to one file.
+
+Run with `make train`. Only needed when something changes what the model
+learns: the columns, preparation steps, model settings, or data.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -22,6 +28,12 @@ logger = logging.getLogger(__name__)
 
 
 def load_data() -> tuple[pd.DataFrame, pd.Series[int]]:
+    """Download the Adult Income data and split it into inputs and answers.
+
+    Keeps only the recipe's columns and turns text columns into plain
+    strings, matching what the API will receive. The answer becomes 1 for
+    earning over $50K and 0 otherwise.
+    """
     dataset = fetch_openml("adult", version=2, as_frame=True)
     frame: pd.DataFrame = dataset.frame
 
@@ -36,6 +48,12 @@ def load_data() -> tuple[pd.DataFrame, pd.Series[int]]:
 
 
 def train(settings: Settings) -> float:
+    """Train the pipeline, score it, and save it with a version label.
+
+    Holds back part of the data to measure ROC-AUC, then saves the trained
+    pipeline, its version (the training time in UTC), and its score together
+    in one file so they can never get separated. Returns the ROC-AUC.
+    """
     features, target = load_data()
     x_train, x_test, y_train, y_test = train_test_split(
         features,
@@ -64,6 +82,11 @@ def train(settings: Settings) -> float:
 
 
 def main() -> None:
+    """Run training from the command line: read settings, train, report.
+
+    Sets up logging at the configured level, trains and saves the model,
+    then logs the ROC-AUC and where the file was saved.
+    """
     settings = Settings()
     logging.basicConfig(level=settings.log_level)
     auc = train(settings)
