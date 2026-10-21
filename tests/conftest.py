@@ -78,3 +78,9 @@ def client(model_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestCl
     monkeypatch.setenv("APP_MODEL_PATH", str(model_path))
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def sample_rows() -> list[dict[str, Any]]:
+    """Return the batch.json people as dataset-named rows, ready for Predictor."""
+    return make_training_rows()
