@@ -20,3 +20,9 @@ htmlcov/
 artifacts/
 .env
 notebooks/
+
+# Logs
+*.log
+
+# Editor
+.vscode/
