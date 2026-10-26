@@ -52,6 +52,12 @@ def person_request() -> dict[str, Any]:
 
 
 @pytest.fixture
+def batch_request() -> dict[str, Any]:
+    """Return the sample batch from batch.json as a request body."""
+    return load_request("batch.json")
+
+
+@pytest.fixture
 def model_path(tmp_path: Path) -> Path:
     """Train a tiny model on the sample people and save it to a temp folder.
 

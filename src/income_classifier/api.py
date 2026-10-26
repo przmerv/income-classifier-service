@@ -187,7 +187,7 @@ def predict(person: Person, request: Request) -> PredictResponse:
     if unknown:
         logger.warning(
             "values not in training data",
-            extra={"fields": {"unknown": unknown, "row": row}},
+            extra={"fields": {"unknown": unknown}},
         )
         raise HTTPException(
             status_code=422,
