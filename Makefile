@@ -21,3 +21,9 @@ train:
 
 serve:
 	uv run uvicorn income_classifier.api:app --reload --no-access-log
+
+docker-build:
+	docker build -t income-classifier-service:local .
+
+docker-run:
+	docker run --rm -p 8000:8000 --name income-classifier income-classifier-service:local

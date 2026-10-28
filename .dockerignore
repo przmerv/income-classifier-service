@@ -1,0 +1,22 @@
+# Git and editors
+.git/
+.vscode/
+
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[oc]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local-only files
+.env
+*.log
+notebooks/
+
+# Not needed to run the service
+tests/
+test-api-requests/
