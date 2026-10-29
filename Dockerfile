@@ -39,6 +39,9 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     APP_MODEL_PATH=/app/artifacts/model.joblib
 
+ARG GIT_SHA=local
+ENV APP_GIT_SHA=$GIT_SHA
+
 USER appuser
 EXPOSE 8000
 
